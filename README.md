@@ -7,6 +7,6 @@ Cryptobot skeleton
 3. pandas
 
 ### Installation
-'''
+```
 pip install aiohttp asyncio pandas
-'''
+```
