@@ -37,17 +37,21 @@ class YobitExchange(ExchangeBaseClass):
 
         return uri + '&'.join(kws)
 
-    @asyncio.coroutine
-    def exchange_coroutine(self, method='trades', sleep_time=1, limit=None):
-        while True:
-            yield from asyncio.sleep(sleep_time)
+    async def exchange_coroutine(self, method='trades', sleep_time=1, is_infinite=True, limit=None):
+        if is_infinite:
+            while True:
+                await asyncio.sleep(sleep_time)
+                data = self.execute_method(method, limit)
+                print(data)
+
+                model = YobitTrading.select()[0]
+
+                history = model.get_history()
+                history.append(data)
+                model.set_history(history)
+
+                model.save()
+        else:
+            await asyncio.sleep(sleep_time)
             data = self.execute_method(method, limit)
-            print(data)
-
-            model = YobitTrading.select()[0]
-
-            history = model.get_history()
-            history.append(data)
-            model.set_history(history)
-
-            model.save()
+            return data
