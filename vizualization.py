@@ -1,1 +1,7 @@
-import matplotlib as plt
+import matplotlib.pyplot as plt
+import time
+import threading
+
+
+def render_trades():
+    pass
