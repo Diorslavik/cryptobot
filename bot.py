@@ -1,16 +1,16 @@
 # from exchange import Exchange
 import asyncio
 from coroutines import exchange_coroutine
-from exchange import ExchangeBaseClass
+from exchange import YobitExchange
+import settings
 
 if __name__ == "__main__":
-    exchange1 = ExchangeBaseClass('exchange1', 'lol', 'lsd-coc')
-    exchange2 = ExchangeBaseClass('exchange2', 'lal', 'coc-lsd')
+    yobit = YobitExchange(settings.YOBIT_API_URL, settings.YOBIT_CURRENCIES)
 
     loop = asyncio.get_event_loop()
 
-    asyncio.async(exchange_coroutine(exchange1, 'trades'))
-    asyncio.async(exchange_coroutine(exchange2, 'trades'))
+    asyncio.async(exchange_coroutine(yobit, 'trades', sleep_time=1, limit=1))
+    asyncio.async(exchange_coroutine(yobit, 'depth', sleep_time=25))
 
     try:
         loop.run_forever()
