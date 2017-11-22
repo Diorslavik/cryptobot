@@ -2,13 +2,12 @@
 Cryptobot skeleton
 
 ## Dependencies
-1. python 3.4+
+1. python 3.6+
 2. aiohttp
-3. asyncio
-4. pandas
-5. peewee
+3. pandas
+4. peewee
 
 ### Installation
 ```
-pip install aiohttp asyncio pandas peewee
+pip install aiohttp pandas peewee
 ```
