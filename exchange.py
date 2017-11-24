@@ -5,6 +5,7 @@ import json
 import time
 import requests
 
+
 class ExchangeBaseClass:
 
     def __init__(self, name, api_url, currencies):
@@ -61,6 +62,7 @@ class BitfinexExchange(ExchangeBaseClass):
         await websocket.send(json.dumps(msg))
         return
 
+
 class BitmexExchange(ExchangeBaseClass):
 
     def __init__(self, name, api_url, currencies, channels):
@@ -85,6 +87,7 @@ class BitmexExchange(ExchangeBaseClass):
         }
         print('Connecting to channels: ' + str(args))
         await websocket.send(json.dumps(msg))
+
 
 class KrakenExchange(ExchangeBaseClass):
 
@@ -112,7 +115,7 @@ class KrakenExchange(ExchangeBaseClass):
 
         r = r.json()
         r["delay"] = delay
-        r['timestamp']=time.time()
+        r['timestamp'] = time.time()
         r['exchange'] = currency
 
         return self.json_processing(r)
@@ -135,7 +138,7 @@ class KrakenExchange(ExchangeBaseClass):
     @staticmethod
     def json_processing(jsn):
 
-        result_row = {}
+        result_row = dict()
         result_row['timestamp'] = jsn['timestamp']
         result_row['response_time'] = jsn['delay']
         result_row['exchange'] = jsn['exchange']
@@ -152,11 +155,11 @@ class KrakenExchange(ExchangeBaseClass):
 
         return result_row
 
+
 class GdaxExchange(ExchangeBaseClass):
 
     def __init__(self, name, api_url, currencies):
         super(GdaxExchange, self).__init__(name, api_url, currencies)
-        # self.orderbook = BitfinexOrderBook()
 
     @staticmethod
     def make_api_url(url, method, currencies, **kwargs):
@@ -169,20 +172,19 @@ class GdaxExchange(ExchangeBaseClass):
 
         return url + '&'.join(kws)
 
-
     def execute_method(self, method='book', currency=""):
         request_url = self.make_api_url(self.api_url,
                                         method,
                                         currency,
-                                        level = 3)
+                                        level=3)
         delay = time.time()
         r = requests.get(request_url)
         delay = time.time() - delay
 
         r = r.json()
-        r["delay"]=delay
-        r['timestamp']=time.time()
-        r['exchange']=currency
+        r["delay"] = delay
+        r['timestamp'] = time.time()
+        r['exchange'] = currency
         return self.json_processing(r)
 
     async def exchange_coroutine(self, method='book', sleep_time=5, is_infinite=True):
