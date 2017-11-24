@@ -116,7 +116,7 @@ class KrakenExchange(ExchangeBaseClass):
         r = r.json()
         r["delay"] = delay
         r['timestamp'] = time.time()
-        r['exchange'] = currency
+        r['exchange'] = self.name
 
         return self.json_processing(r)
 
@@ -172,7 +172,7 @@ class GdaxExchange(ExchangeBaseClass):
 
         return url + '&'.join(kws)
 
-    def execute_method(self, method='book', currency=""):
+    def execute_method(self, method='book', currency=None):
         request_url = self.make_api_url(self.api_url,
                                         method,
                                         currency,
@@ -184,7 +184,7 @@ class GdaxExchange(ExchangeBaseClass):
         r = r.json()
         r["delay"] = delay
         r['timestamp'] = time.time()
-        r['exchange'] = currency
+        r['exchange'] = self.name
         return self.json_processing(r)
 
     async def exchange_coroutine(self, method='book', sleep_time=5, is_infinite=True):
