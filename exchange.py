@@ -2,6 +2,7 @@
 import asyncio
 from orderbook import BitfinexOrder, BitfinexOrderBook
 import json
+import time
 
 
 class ExchangeBaseClass:
