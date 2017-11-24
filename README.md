@@ -43,4 +43,4 @@ python bot.py
 1. Add X_API_URL, X_CURRENCIES and X_CHANNELS to file named settings.py
 2. Similar to REST API exchange
 3. Each ExchangeClass should have consumer, producer and connect_to_channels(self, websocket) methods
-4-5-6. Similar to REST API exchange
+4. Steps 4-6 are similar to REST API exchange
