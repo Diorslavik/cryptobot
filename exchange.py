@@ -2,6 +2,7 @@
 import requests
 import asyncio
 from models import YobitTrading
+import json
 
 
 class ExchangeBaseClass:
@@ -55,3 +56,20 @@ class YobitExchange(ExchangeBaseClass):
             await asyncio.sleep(sleep_time)
             data = self.execute_method(method, limit)
             return data
+
+
+class BitfinexExchange(ExchangeBaseClass):
+
+    @staticmethod
+    async def consumer(message):
+        print(message)
+        return json.loads(message)
+
+    @staticmethod
+    async def producer():
+        ping = {
+            'event': 'ping'
+        }
+        print(ping)
+        await asyncio.sleep(0)
+        return json.dumps(ping)
