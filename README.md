@@ -26,8 +26,8 @@ python bot.py
 3. Each ExchangeClass should have 3 methods:
 make_api_url(url, method, **kwargs);
 execute_method(self, method, currency);
-exchange_coroutine(self, method, sleep_time, if_infinite)* (Look in code for more)
-* We should choose better name for this function
+exchange_coroutine(self, method, sleep_time, if_infinite)
+* We should choose better name for function exchange_coroutine
 4. Create object of exchange X in bot.py => X_obj
 5. Add 2 lines of code to bot.py:
 ```
