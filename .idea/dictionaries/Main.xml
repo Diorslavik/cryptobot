@@ -6,11 +6,14 @@
       <w>bitmex</w>
       <w>btcusd</w>
       <w>coroutine</w>
+      <w>gdax</w>
+      <w>kraken</w>
       <w>orderbook</w>
       <w>prec</w>
       <w>realtime</w>
       <w>websocket</w>
       <w>xbtusd</w>
+      <w>xxbtzusd</w>
       <w>yobit</w>
     </words>
   </dictionary>

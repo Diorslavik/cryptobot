@@ -62,10 +62,8 @@ class BitfinexOrderBook(OrderBook):
         if self.bids and self.asks:
             bid = max([_bid.price for _bid in self.bids])
             bid_volume = abs(sum([_bid.amount for _bid in self.bids if _bid.price == bid]))
-            print(bid_volume)
             ask = min([_ask.price for _ask in self.asks])
             ask_volume = abs(sum([_ask.amount for _ask in self.asks if _ask.price == ask]))
-            print(ask_volume)
 
             return OrderBookOutputData(exchange,
                                        bid, bid_volume,
@@ -76,3 +74,21 @@ class BitfinexOrderBook(OrderBook):
 
     def __repr__(self):
         return 'Bids: ' + str(self.bids) + '\n' + 'Asks: ' + str(self.asks)
+
+
+class BitmexOrder(Order):
+    def __init__(self, response, exchange):
+        super(BitmexOrder, self).__init__(response)
+
+        self.exchange = exchange
+        self.bid = response['bidPrice']
+        self.bid_volume = response['bidSize'] / response['bidPrice']
+        self.ask = response['askPrice']
+        self.ask_volume = response['askSize'] / response['askPrice']
+        self.timestamp = time.time()
+
+    def __repr__(self):
+        return str(OrderBookOutputData(self.exchange,
+                                       self.bid, self.bid_volume,
+                                       self.ask, self.ask_volume,
+                                       response_time=''))

@@ -8,10 +8,22 @@ import ws
 
 def main(argv):
 
+    """
+        Socket exchanges
+    """
     bitfinex = BitfinexExchange('Bitfinex',
                                 settings.BITFINEX_API_URL,
                                 settings.BITFINEX_CURRENCIES,
                                 settings.BITFINEX_CHANNELS)
+
+    bitmex = BitmexExchange('BitMEX',
+                            settings.BITMEX_API_URL,
+                            settings.BITMEX_CURRENCIES,
+                            settings.BITMEX_CHANNELS)
+
+    """
+        REST API exchanges
+    """
 
     gdax = GdaxExchange("GDAX",
                         settings.GDAX_API_URL,
@@ -21,26 +33,19 @@ def main(argv):
                             settings.KRAKEN_API_URL,
                             settings.KRAKEN_CURRENCIES)
 
-
-
-    # bitmex = BitmexExchange('BitMEX',
-    #                         settings.BITMEX_API_URL,
-    #                         settings.BITMEX_CURRENCIES,
-    #                         settings.BITFINEX_CHANNELS)
-
     loop = asyncio.get_event_loop()
 
     print('Adding bitfinex')
     asyncio.ensure_future(ws.connect(bitfinex))
 
-    # print('Adding bitMEX')
-    # asyncio.ensure_future(ws.connect(bitmex))
+    print('Adding bitMEX')
+    asyncio.ensure_future(ws.connect(bitmex))
 
-    print('Adding kraken')
-    asyncio.ensure_future(kraken.exchange_coroutine())
+    # print('Adding kraken')
+    # asyncio.ensure_future(kraken.exchange_coroutine())
 
-    print('Adding gdax')
-    asyncio.ensure_future(gdax.exchange_coroutine())
+    # print('Adding gdax')
+    # asyncio.ensure_future(gdax.exchange_coroutine())
 
     try:
         loop.run_forever()
