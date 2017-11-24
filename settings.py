@@ -3,6 +3,12 @@
 YOBIT_API_URL = 'https://www.yobit.net/api/3'
 YOBIT_CURRENCIES = ['btc_usd']
 
+GDAX_API_URL = 'https://api.gdax.com/products'
+GDAX_CURRENCIES = ['BTC-USD']
+
+KRAKEN_API_URL = 'https://api.kraken.com/0/public'
+KRAKEN_CURRENCIES = ['XXBTZUSD']
+
 BITFINEX_API_URL = 'wss://api.bitfinex.com/ws/2'
 BITFINEX_CHANNELS = ['book']
 BITFINEX_CURRENCIES = ['btc_usd']
