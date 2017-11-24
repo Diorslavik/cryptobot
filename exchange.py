@@ -1,64 +1,71 @@
 # Exchange models here
-import requests
 import asyncio
-from models import YobitTrading
+from orderbook import BitfinexOrder, BitfinexOrderBook
 import json
 
 
 class ExchangeBaseClass:
 
-    def __init__(self, api_url, currencies):
+    def __init__(self, name, api_url, currencies):
+        self.name = name
         self.api_url = api_url
         self.currencies = currencies
 
     def __str__(self):
-        return self.api_url
-
-
-class YobitExchange(ExchangeBaseClass):
-
-    def execute_method(self, method='trades', limit=None):
-        request_url = self.make_api_url(self.api_url,
-                                        method,
-                                        currencies=self.currencies, limit=limit)
-        r = requests.get(request_url)
-        return r.json()
-
-    @staticmethod
-    def make_api_url(url, method, currencies, **kwargs):
-        if kwargs['limit'] is None:
-            kwargs.pop('limit')
-
-        uri = url + '/' + method + '/' + '-'.join(currencies)
-
-        if kwargs != {}:
-            uri += '?'
-
-        kws = ['{}={}'.format(name, value) for name, value in kwargs.items()]  # args formatting
-
-        return uri + '&'.join(kws)
-
-    async def exchange_coroutine(self, method='trades', sleep_time=1, is_infinite=True, limit=None):
-        if is_infinite:
-            while True:
-                await asyncio.sleep(sleep_time)
-                data = self.execute_method(method, limit)
-                print(data)
-
-                model = YobitTrading.select()[0]
-
-                history = model.get_history()
-                history.append(data)
-                model.set_history(history)
-
-                model.save()
-        else:
-            await asyncio.sleep(sleep_time)
-            data = self.execute_method(method, limit)
-            return data
+        return self.name
 
 
 class BitfinexExchange(ExchangeBaseClass):
+
+    def __init__(self, name, api_url, currencies, channels):
+        super(BitfinexExchange, self).__init__(name, api_url, currencies)
+        self.channels = channels
+        self.orderbook = BitfinexOrderBook()
+
+    async def consumer(self, message):
+        message = json.loads(message)
+        if isinstance(message, dict):
+            print('Message is a set!')
+        elif isinstance(message[1][0], list):
+            orders = message[1]
+            for _order in orders:
+                order = BitfinexOrder(_order)
+                self.orderbook.update(order)
+        else:
+            _order = message[1]
+            try:
+                order = BitfinexOrder(_order)
+                self.orderbook.update(order)
+            except ValueError:
+                print('Junk data')
+        print(self.orderbook.top(self))
+
+    @staticmethod
+    async def producer():
+        ping = {
+            'event': 'ping',
+        }
+        await asyncio.sleep(1000)
+        return json.dumps(ping)
+
+    async def connect_to_channels(self, websocket):
+        # for channel in self.channels: TODO fix for multi-channels to work
+        msg = {
+            'event': 'subscribe',
+            'channel': self.channels[0],
+            'symbol': 'tBTCUSD',
+            'prec': 'R0'
+        }
+        await websocket.send(json.dumps(msg))
+        return
+
+
+class BitmexExchange(ExchangeBaseClass):
+
+    def __init__(self, name, api_url, currencies, channels):
+        super(BitmexExchange, self).__init__(name, api_url, currencies)
+        self.channels = channels
+        self.orderbook = BitfinexOrderBook()
 
     @staticmethod
     async def consumer(message):
@@ -67,9 +74,13 @@ class BitfinexExchange(ExchangeBaseClass):
 
     @staticmethod
     async def producer():
-        ping = {
-            'event': 'ping'
+        pass
+
+    async def connect_to_channels(self, websocket):
+        args = [channel + ':XBTUSD' for channel in self.channels]
+        msg = {
+            'op': 'subscribe',
+            'args': args
         }
-        print(ping)
-        await asyncio.sleep(0)
-        return json.dumps(ping)
+        print('Connecting to channels: ' + str(args))
+        await websocket.send(json.dumps(msg))

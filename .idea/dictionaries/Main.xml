@@ -1,9 +1,16 @@
 <component name="ProjectDictionaryState">
   <dictionary name="Main">
     <words>
+      <w>asyncio</w>
       <w>bitfinex</w>
+      <w>bitmex</w>
+      <w>btcusd</w>
       <w>coroutine</w>
+      <w>orderbook</w>
+      <w>prec</w>
+      <w>realtime</w>
       <w>websocket</w>
+      <w>xbtusd</w>
       <w>yobit</w>
     </words>
   </dictionary>
