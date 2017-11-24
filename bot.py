@@ -1,6 +1,6 @@
 # from exchange import Exchange
 import asyncio
-from exchange import BitfinexExchange, BitmexExchange
+from exchange import BitfinexExchange, BitmexExchange, GdaxExchange, KrakenExchange
 import settings
 import sys
 import ws
@@ -12,6 +12,16 @@ def main(argv):
                                 settings.BITFINEX_API_URL,
                                 settings.BITFINEX_CURRENCIES,
                                 settings.BITFINEX_CHANNELS)
+
+    gdax = GdaxExchange("GDAX",
+                        settings.GDAX_API_URL,
+                        settings.GDAX_CURRENCIES)
+
+    kraken = KrakenExchange("Kraken",
+                            settings.KRAKEN_API_URL,
+                            settings.KRAKEN_CURRENCIES)
+
+
 
     # bitmex = BitmexExchange('BitMEX',
     #                         settings.BITMEX_API_URL,
@@ -25,6 +35,12 @@ def main(argv):
 
     # print('Adding bitMEX')
     # asyncio.ensure_future(ws.connect(bitmex))
+
+    print('Adding kraken')
+    asyncio.ensure_future(kraken.exchange_coroutine())
+
+    print('Adding gdax')
+    asyncio.ensure_future(gdax.exchange_coroutine())
 
     try:
         loop.run_forever()
