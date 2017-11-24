@@ -22,6 +22,7 @@ class BitfinexExchange(ExchangeBaseClass):
         self.channels = channels
         self.orderbook = BitfinexOrderBook()
 
+    # Some awful parsing Bitfinex response stuff, see bitfinex api
     async def consumer(self, message):
         message = json.loads(message)
         if isinstance(message, dict):
