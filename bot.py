@@ -34,7 +34,8 @@ def main(argv):
 
     print('Adding gdax')
     loop.run_in_executor(p, gdax.connect)
-
+	time.sleep(0.5)
+	
     print('Adding kraken')
     loop.run_in_executor(p, kraken.connect)
     time.sleep(0.5)
