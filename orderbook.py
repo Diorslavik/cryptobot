@@ -76,3 +76,52 @@ class BitfinexOrderBook(OrderBook):
 
     def __repr__(self):
         return 'Bids: ' + str(self.bids) + '\n' + 'Asks: ' + str(self.asks)
+
+
+class GeminiOrderBook:
+
+    asks = dict()
+    bids = dict()
+    ask = float()
+    bid = float()
+    ask_volume = float()
+    bid_volume = float()
+    timestamp = int()
+
+    def initvalue(self, exchange, orders=list()):
+        for order in orders:
+            if order['side'] == 'bid':
+                self.bids[float(order['price'])] = float(order['remaining'])
+            elif order['side'] == 'ask':
+                self.asks[float(order['price'])] = float(order['remaining'])
+        print(self.top(exchange))
+
+    def update(self, exchange, order):
+        order = order[0]
+        if 'side' in order:
+            if order['side'] == 'bid':
+                if order['price'] in self.bids:
+                    self.bids[order['price']] += float(order['delta'])
+                    if float(order['price']) > self.bid:
+                        print(self.top(exchange))
+
+
+            elif order['side'] == 'ask':
+                if order['price'] in self.asks:
+                    self.asks[order['price']] += float(order['delta'])
+                    if float(order['price']) < self.ask:
+                        print(self.top(exchange))
+
+            if self.ask_volume == 0 or self.bid_volume == 0:
+                print(self.top(exchange))
+
+    def top(self, exchange):
+        self.bid = max(self.bids.keys())
+        self.ask = min(self.asks.keys())
+        self.ask_volume = self.asks[self.ask]
+        self.bid_volume = self.bids[self.bid]
+
+        return OrderBookOutputData(exchange,
+                                   self.bid, self.bid_volume,
+                                   self.ask, self.ask_volume,
+                                   response_time='')

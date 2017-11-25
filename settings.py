@@ -16,3 +16,7 @@ BITFINEX_CURRENCIES = ['btc_usd']
 BITMEX_API_URL = 'wss://www.bitmex.com/realtime'
 BITMEX_CHANNELS = ['orderBookL2']
 BITMEX_CURRENCIES = ['btc_usd']
+
+GEMINI_API_URL = 'wss://api.gemini.com/v1/marketdata'
+GEMINI_CHANNELS = ['BTCUSD']
+GEMINI_CURRENCIES = ['BTCUSD']
