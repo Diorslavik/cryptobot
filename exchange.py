@@ -126,6 +126,8 @@ class KrakenExchange(ExchangeBaseClass):
             return None
 
         r["delay"] = delay
+        r['timestamp'] = time.time()
+        r['exchange'] = currency
 
         return r
 
@@ -150,6 +152,26 @@ class KrakenExchange(ExchangeBaseClass):
                 print(str(orderbook))
 
             await asyncio.sleep(sleep_time)
+            print(data)
+
+    @staticmethod
+    def json_processing(jsn):
+
+        result_row = dict()
+        result_row['timestamp'] = jsn['timestamp']
+        result_row['response_time'] = jsn['delay']
+        result_row['exchange'] = jsn['exchange']
+
+        jsn = jsn['result'][list(jsn['result'].keys())[0]]
+        jsn['bids'] = [[float(bid[0]), float(bid[1])] for bid in jsn['bids']]
+        jsn['asks'] = [[float(ask[0]), float(ask[1])] for ask in jsn['asks']]
+
+        result_row['bid'] = max([bid[0] for bid in jsn['bids']])
+        result_row['bid_volume'] = sum([bid[1] for bid in jsn['bids'] if bid[0] == result_row['bid']])
+
+        result_row['ask'] = min([ask[0] for ask in jsn['asks']])
+        result_row['ask_volume'] = sum([ask[1] for ask in jsn['asks'] if ask[0] == result_row['ask']])
+
 
 
 class GdaxExchange(ExchangeBaseClass):
@@ -168,7 +190,7 @@ class GdaxExchange(ExchangeBaseClass):
 
         return url + '&'.join(kws)
 
-    def execute_method(self, method='book', currency=None):
+    def execute_method(self, method='book', currency=""):
         request_url = self.make_api_url(self.api_url,
                                         method,
                                         currency,
@@ -181,7 +203,9 @@ class GdaxExchange(ExchangeBaseClass):
         r = r.json()
         r["delay"] = delay
 
-        return r
+        r['timestamp'] = time.time()
+        r['exchange'] = currency
+        return self.json_processing(r)
 
     async def exchange_coroutine(self, method='book', sleep_time=5, is_infinite=True):
         if is_infinite:
@@ -201,3 +225,25 @@ class GdaxExchange(ExchangeBaseClass):
                 print(str(orderbook))
 
             await asyncio.sleep(sleep_time)
+            print(data)
+
+    @staticmethod
+    def json_processing(jsn):
+
+        jsn['bids'] = [[float(i[0]), float(i[1])] for i in jsn['bids']]
+        jsn['asks'] = [[float(i[0]), float(i[1])] for i in jsn['asks']]
+
+        result_row = dict()
+
+        result_row['timestamp'] = jsn['timestamp']
+        result_row['exchange'] = jsn['exchange']
+
+        result_row['bid'] = max([bid[0] for bid in jsn['bids']])
+        result_row['bid_volume'] = sum([bid[1] for bid in jsn['bids'] if bid[0] == result_row['bid']])
+
+        result_row['ask'] = min([ask[0] for ask in jsn['asks']])
+        result_row['ask_volume'] = sum([ask[1] for ask in jsn['asks'] if ask[0] == result_row['ask'] ])
+
+        result_row['response_time'] = jsn['delay']
+
+        return result_row

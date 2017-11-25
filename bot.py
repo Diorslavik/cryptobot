@@ -41,11 +41,11 @@ def main(argv):
     print('Adding bitMEX')
     asyncio.ensure_future(ws.connect(bitmex))
 
-    print('Adding kraken')
-    asyncio.ensure_future(kraken.exchange_coroutine())
+    # print('Adding kraken')
+    # asyncio.ensure_future(kraken.exchange_coroutine())
 
-    print('Adding gdax')
-    asyncio.ensure_future(gdax.exchange_coroutine())
+    # print('Adding gdax')
+    # asyncio.ensure_future(gdax.exchange_coroutine())
 
     try:
         loop.run_forever()

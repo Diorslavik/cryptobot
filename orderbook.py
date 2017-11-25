@@ -98,7 +98,7 @@ class BitmexOrder(Order):
                                        self.ask, self.ask_volume,
                                        response_time=''))
 
-
+      
 class KrakenOrderBook(OrderBookOutputData):
     def __init__(self, exchange, orders):
         data = self.orderbook_processing(orders)
@@ -145,4 +145,3 @@ class GdaxOrderBook(OrderBookOutputData):
         result_row['response_time'] = orders['delay']
 
         return result_row
-
