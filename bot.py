@@ -10,7 +10,6 @@ import time
 
 p = ThreadPoolExecutor(settings.THREAD_COUNT)
 
-
 def main(argv):
     loop = asyncio.get_event_loop()
 
@@ -35,7 +34,7 @@ def main(argv):
     print('Adding gdax')
     loop.run_in_executor(p, gdax.connect)
     time.sleep(0.5)
-	
+
     print('Adding kraken')
     loop.run_in_executor(p, kraken.connect)
     time.sleep(0.5)

@@ -1,6 +1,5 @@
 import settings
 
-
 def export_cache(cache):
     cache = [str(c) for c in cache]
     data = '\n'.join(cache)

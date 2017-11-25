@@ -141,6 +141,9 @@ class KrakenExchange(ExchangeBaseClass):
 
         r = r['result'][currency]
         r['response_time'] = delay
+        r['delay'] = delay
+        r['timestamp'] = time.time()
+        r['exchange'] = currency
 
         return r
 
@@ -253,5 +256,29 @@ class GeminiExchange(ExchangeBaseClass):
         await asyncio.sleep(1000)
         return json.dumps(ping)
 
+        return result_row
+
+
+class GeminiExchange(ExchangeBaseClass):
+    def __init__(self, name, api_url, currencies):
+        api_url += '/' + currencies[0]
+        super(GeminiExchange, self).__init__(name, api_url, currencies)
+        self.orderbook = BitfinexOrder.GeminiOrderBook()
+
+    async def consumer(self, message):
+        message = json.loads(message)
+        if len(message) == 4:
+            self.orderbook.initvalue(self, message['events'])
+
+        elif len(message) == 6:
+            self.orderbook.update(self, message['events'])
+
+    @staticmethod
+    async def producer():
+        ping = {
+            'event': 'ping',
+        }
+        await asyncio.sleep(1000)
+        return json.dumps(ping)
     async def connect_to_channels(self, websocket):
         pass

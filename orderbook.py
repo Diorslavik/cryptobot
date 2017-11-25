@@ -49,6 +49,11 @@ class BitfinexOrderBook(OrderBook):
         self.bids = [order for order in orders if order.amount > 0]
         self.asks = [order for order in orders if order.amount < 0]
 
+    def __init__(self, orders=list()):
+        super(BitfinexOrderBook, self).__init__(self)
+        self.bids = [order for order in orders if order.amount > 0]
+        self.asks = [order for order in orders if order.amount < 0]
+
     def update(self, order):
         if order.price == 0:
             if order.amount > 0:
@@ -233,5 +238,3 @@ class ExchangeOrderBook(OrderBook):
 
     def __repr__(self):
         pass
-
-    # В дальнейшем модель можно расширять дополнительными методами
