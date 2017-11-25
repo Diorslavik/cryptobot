@@ -26,7 +26,15 @@ def main(argv):
     kraken = KrakenExchange('Kraken',
                             settings.KRAKEN_API_URL,
                             settings.KRAKEN_CURRENCIES)
-    
+
+    gdax = GdaxExchange("GDAX",
+                        settings.GDAX_API_URL,
+                        settings.GDAX_CURRENCIES)
+
+    print('Adding gdax')
+    loop.run_in_executor(p, gdax.connect)
+    time.sleep(0.5)
+
     print('Adding kraken')
     loop.run_in_executor(p, kraken.connect)
     time.sleep(0.5)

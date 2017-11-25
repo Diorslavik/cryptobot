@@ -44,6 +44,10 @@ class BitfinexOrder(Order):
 
 
 class BitfinexOrderBook(OrderBook):
+    def __init__(self, orders=list()):
+        super(BitfinexOrderBook, self).__init__(self)
+        self.bids = [order for order in orders if order.amount > 0]
+        self.asks = [order for order in orders if order.amount < 0]
 
     def __init__(self, orders=list()):
         super(BitfinexOrderBook, self).__init__(self)
@@ -146,55 +150,50 @@ class BitmexOrder(Order):
                                    self.ask, self.ask_volume,
                                    response_time=-1)
 
-      
-class KrakenOrderBook(OrderBookOutputData):
-    def __init__(self, exchange, orders):
-        data = self.orderbook_processing(orders)
-        super(KrakenOrderBook, self).__init__(exchange,
-                                              data['bid'], data['bid_volume'],
-                                              data['ask'], data['ask_volume'],
-                                              data['response_time'])
 
-    @staticmethod
-    def orderbook_processing(orders):
-        result_row = dict()
-        result_row['response_time'] = orders['delay']
+class KrakenOrderBook(OrderBook):
+    def __init__(self):
+        super(KrakenOrderBook, self).__init__()
+        self.bids = []
+        self.asks = []
+        self.response_time = -1
 
-        orders = orders['result'][list(orders['result'].keys())[0]]
-        orders['bids'] = [[float(bid[0]), float(bid[1])] for bid in orders['bids']]
-        orders['asks'] = [[float(ask[0]), float(ask[1])] for ask in orders['asks']]
+    def top(self, exchange):
+        bid = max([bid[0] for bid in self.bids])
+        bid_volume = sum([_bid[1] for _bid in self.bids if _bid[0] == bid])
 
-        result_row['bid'] = max([bid[0] for bid in orders['bids']])
-        result_row['bid_volume'] = sum([bid[1] for bid in orders['bids'] if bid[0] == result_row['bid']])
+        ask = min([ask[0] for ask in self.asks])
+        ask_volume = sum([_ask[1] for _ask in self.asks if _ask[0] == ask])
 
-        result_row['ask'] = min([ask[0] for ask in orders['asks']])
-        result_row['ask_volume'] = sum([ask[1] for ask in orders['asks'] if ask[0] == result_row['ask']])
+        return OrderBookOutputData(exchange, bid, bid_volume, ask, ask_volume, self.response_time)
 
-        return result_row
+    def update(self, orders):
+        self.bids = [[float(bid[0]), float(bid[1])] for bid in orders['bids']]
+        self.asks = [[float(ask[0]), float(ask[1])] for ask in orders['asks']]
+        self.response_time = orders['response_time']
 
 
-class GdaxOrderBook(OrderBookOutputData):
-    def __init__(self, exchange, orders):
-        data = self.orderbook_processing(orders)
-        super(GdaxOrderBook, self).__init__(exchange, data['bid'], data['bid_volume'], data['ask'],
-                                            data['ask_volume'], data['response_time'])
+class GdaxOrderBook(OrderBook):
+    def __init__(self):
+        super(GdaxOrderBook, self).__init__()
+        self.bids = []
+        self.asks = []
+        self.response_time = -1
 
-    @staticmethod
-    def orderbook_processing(orders):
-        orders['bids'] = [[float(i[0]), float(i[1])] for i in orders['bids']]
-        orders['asks'] = [[float(i[0]), float(i[1])] for i in orders['asks']]
+    def top(self, exchange):
+        bid = max([bid[0] for bid in self.bids])
+        bid_volume = sum([_bid[1] for _bid in self.bids if _bid[0] == bid])
 
-        result_row = dict()
+        ask = min([ask[0] for ask in self.asks])
+        ask_volume = sum([_ask[1] for _ask in self.asks if _ask[0] == ask])
 
-        result_row['bid'] = max([bid[0] for bid in orders['bids']])
-        result_row['bid_volume'] = sum([bid[1] for bid in orders['bids'] if bid[0] == result_row['bid']])
+        return OrderBookOutputData(exchange, bid, bid_volume, ask, ask_volume, self.response_time)
 
-        result_row['ask'] = min([ask[0] for ask in orders['asks']])
-        result_row['ask_volume'] = sum([ask[1] for ask in orders['asks'] if ask[0] == result_row['ask']])
+    def update(self, orders):
+        self.bids = [[float(bid[0]), float(bid[1])] for bid in orders['bids']]
+        self.asks = [[float(ask[0]), float(ask[1])] for ask in orders['asks']]
+        self.response_time = orders['response_time']
 
-        result_row['response_time'] = orders['delay']
-
-        return result_row
 
 
 """
@@ -239,5 +238,3 @@ class ExchangeOrderBook(OrderBook):
 
     def __repr__(self):
         pass
-
-    # В дальнейшем модель можно расширять дополнительными методами
