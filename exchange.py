@@ -120,7 +120,6 @@ class KrakenExchange(ExchangeBaseClass):
         delay = time.time()
         r = requests.get(request_url)
         delay = time.time() - delay
-
         r = r.json()
 
         if r['error']:
@@ -139,7 +138,7 @@ class KrakenExchange(ExchangeBaseClass):
                         # error handler
                         pass
                     orderbook = KrakenOrderBook(self, data)
-                    orderbook.orderbook_save()
+                    orderbook.orderbook_export()
                     print(str(orderbook))
                 await asyncio.sleep(sleep_time)
 
@@ -147,7 +146,7 @@ class KrakenExchange(ExchangeBaseClass):
             for currency in self.currencies:
                 data = self.execute_method(method, currency=currency)
                 orderbook = KrakenOrderBook(self, data)
-                orderbook.orderbook_save()
+                orderbook.orderbook_export()
                 print(str(orderbook))
 
             await asyncio.sleep(sleep_time)
@@ -190,7 +189,7 @@ class GdaxExchange(ExchangeBaseClass):
                 for currency in self.currencies:
                     data = self.execute_method(method, currency=currency)
                     orderbook = GdaxOrderBook(self, data)
-                    orderbook.orderbook_save()
+                    orderbook.orderbook_export()
                     print(str(orderbook))
                 await asyncio.sleep(sleep_time)
 
@@ -198,7 +197,7 @@ class GdaxExchange(ExchangeBaseClass):
             for currency in self.currencies:
                 data = self.execute_method(method, currency=currency)
                 orderbook = GdaxOrderBook(self, data)
-                orderbook.orderbook_save()
+                orderbook.orderbook_export()
                 print(str(orderbook))
 
             await asyncio.sleep(sleep_time)

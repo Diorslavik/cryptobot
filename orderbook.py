@@ -32,7 +32,7 @@ class OrderBookOutputData:
                          str(self.ask), str(self.ask_volume),
                          str(self.response_time)])
 
-    def orderbook_save(self):
+    def orderbook_export(self):
         with open(self.filename, 'a') as file:
             file.write(str(self)+"\n")
 
