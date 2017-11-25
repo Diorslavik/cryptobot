@@ -16,3 +16,5 @@ BITFINEX_CURRENCIES = ['btc_usd']
 BITMEX_API_URL = 'wss://www.bitmex.com/realtime'
 BITMEX_CHANNELS = ['quote']
 BITMEX_CURRENCIES = ['XBTUSD']
+
+CSV_FILE_NAME = 'out.csv'

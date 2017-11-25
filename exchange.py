@@ -1,6 +1,6 @@
 # Exchange models here
 import asyncio
-from orderbook import BitfinexOrder, BitfinexOrderBook, BitmexOrder
+from orderbook import BitfinexOrder, BitfinexOrderBook, BitmexOrder, KrakenOrderBook, GdaxOrderBook
 import json
 import time
 import requests
@@ -112,32 +112,44 @@ class KrakenExchange(ExchangeBaseClass):
 
         return url + '&'.join(kws)
 
-    def execute_method(self, method='Depth', currency=None):
+    def execute_method(self, method='Depth', currency=None, count=200):
         request_url = self.make_api_url(self.api_url,
                                         method,
-                                        pair=currency, count=200)
+                                        pair=currency, count=count)
+
         delay = time.time()
         r = requests.get(request_url)
         delay = time.time() - delay
-
         r = r.json()
+
+        if r['error']:
+            return None
+
         r["delay"] = delay
         r['timestamp'] = time.time()
         r['exchange'] = currency
 
-        return self.json_processing(r)
+        return r
 
-    async def exchange_coroutine(self, method='Depth', sleep_time=5, is_infinite=True):
+    async def exchange_coroutine(self, method='Depth', sleep_time=5, is_infinite=True, count=200):
         if is_infinite:
             while True:
                 for currency in self.currencies:
-                    data = self.execute_method(method, currency=currency)
-                    print(data)
+                    data = self.execute_method(method, currency=currency, count=count)
+                    if not data:
+                        # error handler
+                        pass
+                    orderbook = KrakenOrderBook(self, data)
+                    orderbook.orderbook_export()
+                    print(str(orderbook))
                 await asyncio.sleep(sleep_time)
 
         else:
             for currency in self.currencies:
                 data = self.execute_method(method, currency=currency)
+                orderbook = KrakenOrderBook(self, data)
+                orderbook.orderbook_export()
+                print(str(orderbook))
 
             await asyncio.sleep(sleep_time)
             print(data)
@@ -160,7 +172,6 @@ class KrakenExchange(ExchangeBaseClass):
         result_row['ask'] = min([ask[0] for ask in jsn['asks']])
         result_row['ask_volume'] = sum([ask[1] for ask in jsn['asks'] if ask[0] == result_row['ask']])
 
-        return result_row
 
 
 class GdaxExchange(ExchangeBaseClass):
@@ -183,13 +194,15 @@ class GdaxExchange(ExchangeBaseClass):
         request_url = self.make_api_url(self.api_url,
                                         method,
                                         currency,
-                                        level = 3)
+                                        level=3)
+
         delay = time.time()
         r = requests.get(request_url)
         delay = time.time() - delay
 
         r = r.json()
         r["delay"] = delay
+
         r['timestamp'] = time.time()
         r['exchange'] = currency
         return self.json_processing(r)
@@ -199,12 +212,17 @@ class GdaxExchange(ExchangeBaseClass):
             while True:
                 for currency in self.currencies:
                     data = self.execute_method(method, currency=currency)
-                    print(data)
+                    orderbook = GdaxOrderBook(self, data)
+                    orderbook.orderbook_export()
+                    print(str(orderbook))
                 await asyncio.sleep(sleep_time)
 
         else:
             for currency in self.currencies:
                 data = self.execute_method(method, currency=currency)
+                orderbook = GdaxOrderBook(self, data)
+                orderbook.orderbook_export()
+                print(str(orderbook))
 
             await asyncio.sleep(sleep_time)
             print(data)

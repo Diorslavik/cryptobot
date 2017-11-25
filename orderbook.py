@@ -1,5 +1,5 @@
 import time
-
+import settings
 
 class Order:
 
@@ -24,12 +24,17 @@ class OrderBookOutputData:
         self.ask = ask
         self.ask_volume = ask_volume
         self.response_time = response_time
+        self.filename = settings.CSV_FILE_NAME
 
     def __str__(self):
         return ';'.join([str(self.timestamp), self.exchange,
                          str(self.bid), str(self.bid_volume),
                          str(self.ask), str(self.ask_volume),
                          str(self.response_time)])
+
+    def orderbook_export(self):
+        with open(self.filename, 'a') as file:
+            file.write(str(self)+"\n")
 
 
 class BitfinexOrder(Order):
@@ -92,3 +97,51 @@ class BitmexOrder(Order):
                                        self.bid, self.bid_volume,
                                        self.ask, self.ask_volume,
                                        response_time=''))
+
+      
+class KrakenOrderBook(OrderBookOutputData):
+    def __init__(self, exchange, orders):
+        data = self.orderbook_processing(orders)
+        super(KrakenOrderBook, self).__init__(exchange, data['bid'], data['bid_volume'], data['ask'],
+                                              data['ask_volume'], data['response_time'])
+
+    @staticmethod
+    def orderbook_processing(orders):
+        result_row = dict()
+        result_row['response_time'] = orders['delay']
+
+        orders = orders['result'][list(orders['result'].keys())[0]]
+        orders['bids'] = [[float(bid[0]), float(bid[1])] for bid in orders['bids']]
+        orders['asks'] = [[float(ask[0]), float(ask[1])] for ask in orders['asks']]
+
+        result_row['bid'] = max([bid[0] for bid in orders['bids']])
+        result_row['bid_volume'] = sum([bid[1] for bid in orders['bids'] if bid[0] == result_row['bid']])
+
+        result_row['ask'] = min([ask[0] for ask in orders['asks']])
+        result_row['ask_volume'] = sum([ask[1] for ask in orders['asks'] if ask[0] == result_row['ask']])
+
+        return result_row
+
+
+class GdaxOrderBook(OrderBookOutputData):
+    def __init__(self, exchange, orders):
+        data = self.orderbook_processing(orders)
+        super(GdaxOrderBook, self).__init__(exchange, data['bid'], data['bid_volume'], data['ask'],
+                                            data['ask_volume'], data['response_time'])
+
+    @staticmethod
+    def orderbook_processing(orders):
+        orders['bids'] = [[float(i[0]), float(i[1])] for i in orders['bids']]
+        orders['asks'] = [[float(i[0]), float(i[1])] for i in orders['asks']]
+
+        result_row = dict()
+
+        result_row['bid'] = max([bid[0] for bid in orders['bids']])
+        result_row['bid_volume'] = sum([bid[1] for bid in orders['bids'] if bid[0] == result_row['bid']])
+
+        result_row['ask'] = min([ask[0] for ask in orders['asks']])
+        result_row['ask_volume'] = sum([ask[1] for ask in orders['asks'] if ask[0] == result_row['ask']])
+
+        result_row['response_time'] = orders['delay']
+
+        return result_row
