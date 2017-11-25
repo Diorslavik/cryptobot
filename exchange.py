@@ -1,9 +1,10 @@
 # Exchange models here
 import asyncio
-from orderbook import BitfinexOrder, BitfinexOrderBook, GeminiOrderBook
+from orderbook import BitfinexOrder, BitfinexOrderBook, BitmexOrder, KrakenOrderBook, GdaxOrderBook, GeminiOrderBook
 import json
 import time
 import requests
+
 
 class ExchangeBaseClass:
 
@@ -27,7 +28,7 @@ class BitfinexExchange(ExchangeBaseClass):
     async def consumer(self, message):
         message = json.loads(message)
         if isinstance(message, dict):
-            print('Message is a set!')
+            pass
         elif isinstance(message[1][0], list):
             orders = message[1]
             for _order in orders:
@@ -39,7 +40,8 @@ class BitfinexExchange(ExchangeBaseClass):
                 order = BitfinexOrder(_order)
                 self.orderbook.update(order)
             except ValueError:
-                print('Junk data')
+                # Junk data
+                pass
         print(self.orderbook.top(self))
 
     @staticmethod
@@ -61,6 +63,7 @@ class BitfinexExchange(ExchangeBaseClass):
         await websocket.send(json.dumps(msg))
         return
 
+
 class BitmexExchange(ExchangeBaseClass):
 
     def __init__(self, name, api_url, currencies, channels):
@@ -68,14 +71,20 @@ class BitmexExchange(ExchangeBaseClass):
         self.channels = channels
         self.orderbook = BitfinexOrderBook()
 
-    @staticmethod
-    async def consumer(message):
-        print(message)
-        return json.loads(message)
+    # Some awful parsing Bitmex response stuff, see bitfinex api
+    async def consumer(self, message):
+        message = json.loads(message)
+        if 'data' in message:
+            order = BitmexOrder(message['data'][0], self)
+            print(order)
 
     @staticmethod
     async def producer():
-        pass
+        ping = {
+            'event': 'ping',
+        }
+        await asyncio.sleep(1000)
+        return json.dumps(ping)
 
     async def connect_to_channels(self, websocket):
         args = [channel + ':XBTUSD' for channel in self.channels]
@@ -83,8 +92,9 @@ class BitmexExchange(ExchangeBaseClass):
             'op': 'subscribe',
             'args': args
         }
-        print('Connecting to channels: ' + str(args))
         await websocket.send(json.dumps(msg))
+        return
+
 
 class KrakenExchange(ExchangeBaseClass):
 
@@ -102,32 +112,44 @@ class KrakenExchange(ExchangeBaseClass):
 
         return url + '&'.join(kws)
 
-    def execute_method(self, method='Depth', currency=None):
+    def execute_method(self, method='Depth', currency=None, count=200):
         request_url = self.make_api_url(self.api_url,
                                         method,
-                                        pair=currency, count=200)
+                                        pair=currency, count=count)
+
         delay = time.time()
         r = requests.get(request_url)
         delay = time.time() - delay
-
         r = r.json()
+
+        if r['error']:
+            return None
+
         r["delay"] = delay
-        r['timestamp']=time.time()
+        r['timestamp'] = time.time()
         r['exchange'] = currency
 
-        return self.json_processing(r)
+        return r
 
-    async def exchange_coroutine(self, method='Depth', sleep_time=5, is_infinite=True):
+    async def exchange_coroutine(self, method='Depth', sleep_time=5, is_infinite=True, count=200):
         if is_infinite:
             while True:
                 for currency in self.currencies:
-                    data = self.execute_method(method, currency=currency)
-                    print(data)
+                    data = self.execute_method(method, currency=currency, count=count)
+                    if not data:
+                        # error handler
+                        pass
+                    orderbook = KrakenOrderBook(self, data)
+                    orderbook.orderbook_export()
+                    print(str(orderbook))
                 await asyncio.sleep(sleep_time)
 
         else:
             for currency in self.currencies:
                 data = self.execute_method(method, currency=currency)
+                orderbook = KrakenOrderBook(self, data)
+                orderbook.orderbook_export()
+                print(str(orderbook))
 
             await asyncio.sleep(sleep_time)
             print(data)
@@ -135,7 +157,7 @@ class KrakenExchange(ExchangeBaseClass):
     @staticmethod
     def json_processing(jsn):
 
-        result_row = {}
+        result_row = dict()
         result_row['timestamp'] = jsn['timestamp']
         result_row['response_time'] = jsn['delay']
         result_row['exchange'] = jsn['exchange']
@@ -150,13 +172,12 @@ class KrakenExchange(ExchangeBaseClass):
         result_row['ask'] = min([ask[0] for ask in jsn['asks']])
         result_row['ask_volume'] = sum([ask[1] for ask in jsn['asks'] if ask[0] == result_row['ask']])
 
-        return result_row
+
 
 class GdaxExchange(ExchangeBaseClass):
 
     def __init__(self, name, api_url, currencies):
         super(GdaxExchange, self).__init__(name, api_url, currencies)
-        # self.orderbook = BitfinexOrderBook()
 
     @staticmethod
     def make_api_url(url, method, currencies, **kwargs):
@@ -169,20 +190,21 @@ class GdaxExchange(ExchangeBaseClass):
 
         return url + '&'.join(kws)
 
-
     def execute_method(self, method='book', currency=""):
         request_url = self.make_api_url(self.api_url,
                                         method,
                                         currency,
-                                        level = 3)
+                                        level=3)
+
         delay = time.time()
         r = requests.get(request_url)
         delay = time.time() - delay
 
         r = r.json()
-        r["delay"]=delay
-        r['timestamp']=time.time()
-        r['exchange']=currency
+        r["delay"] = delay
+
+        r['timestamp'] = time.time()
+        r['exchange'] = currency
         return self.json_processing(r)
 
     async def exchange_coroutine(self, method='book', sleep_time=5, is_infinite=True):
@@ -190,12 +212,17 @@ class GdaxExchange(ExchangeBaseClass):
             while True:
                 for currency in self.currencies:
                     data = self.execute_method(method, currency=currency)
-                    print(data)
+                    orderbook = GdaxOrderBook(self, data)
+                    orderbook.orderbook_export()
+                    print(str(orderbook))
                 await asyncio.sleep(sleep_time)
 
         else:
             for currency in self.currencies:
                 data = self.execute_method(method, currency=currency)
+                orderbook = GdaxOrderBook(self, data)
+                orderbook.orderbook_export()
+                print(str(orderbook))
 
             await asyncio.sleep(sleep_time)
             print(data)
@@ -206,20 +233,21 @@ class GdaxExchange(ExchangeBaseClass):
         jsn['bids'] = [[float(i[0]), float(i[1])] for i in jsn['bids']]
         jsn['asks'] = [[float(i[0]), float(i[1])] for i in jsn['asks']]
 
-        result_row = {}
+        result_row = dict()
 
         result_row['timestamp'] = jsn['timestamp']
         result_row['exchange'] = jsn['exchange']
 
         result_row['bid'] = max([bid[0] for bid in jsn['bids']])
-        result_row['bid_volume'] = sum([bid[1] for bid in jsn['bids'] if bid[0]==result_row['bid']])
+        result_row['bid_volume'] = sum([bid[1] for bid in jsn['bids'] if bid[0] == result_row['bid']])
 
         result_row['ask'] = min([ask[0] for ask in jsn['asks']])
-        result_row['ask_volume'] = sum([ask[1] for ask in jsn['asks'] if ask[0]==result_row['ask'] ])
+        result_row['ask_volume'] = sum([ask[1] for ask in jsn['asks'] if ask[0] == result_row['ask'] ])
 
         result_row['response_time'] = jsn['delay']
 
         return result_row
+
 
 class GemeniExchange(ExchangeBaseClass):
     def __init__(self, name, api_url, currencies):
