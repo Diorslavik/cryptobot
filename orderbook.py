@@ -11,8 +11,7 @@ class Order:
 class OrderBook:
 
     def __init__(self, orders=list()):
-        self.bids = [order for order in orders if order.amount > 0]
-        self.asks = [order for order in orders if order.amount < 0]
+        pass
 
 
 class OrderBookOutputData:
@@ -45,6 +44,11 @@ class BitfinexOrder(Order):
 
 
 class BitfinexOrderBook(OrderBook):
+
+    def __init__(self, orders=list()):
+        super(BitfinexOrderBook, self).__init__(self, orders=list())
+        self.bids = [order for order in orders if order.amount > 0]
+        self.asks = [order for order in orders if order.amount < 0]
 
     def update(self, order):
         if order.price == 0:
