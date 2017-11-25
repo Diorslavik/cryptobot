@@ -17,4 +17,8 @@ BITMEX_API_URL = 'wss://www.bitmex.com/realtime'
 BITMEX_CHANNELS = ['quote']
 BITMEX_CURRENCIES = ['XBTUSD']
 
+GEMINI_API_URL = 'wss://api.gemini.com/v1/marketdata'
+GEMINI_CHANNELS = ['BTCUSD']
+GEMINI_CURRENCIES = ['BTCUSD']
+
 CSV_FILE_NAME = 'out.csv'

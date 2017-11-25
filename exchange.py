@@ -1,6 +1,6 @@
 # Exchange models here
 import asyncio
-from orderbook import BitfinexOrder, BitfinexOrderBook, BitmexOrder, KrakenOrderBook, GdaxOrderBook
+from orderbook import BitfinexOrder, BitfinexOrderBook, BitmexOrder, KrakenOrderBook, GdaxOrderBook, GeminiOrderBook
 import json
 import time
 import requests
@@ -247,3 +247,29 @@ class GdaxExchange(ExchangeBaseClass):
         result_row['response_time'] = jsn['delay']
 
         return result_row
+
+
+class GemeniExchange(ExchangeBaseClass):
+    def __init__(self, name, api_url, currencies):
+        api_url += '/' + currencies[0]
+        super(GemeniExchange, self).__init__(name, api_url, currencies)
+        self.orderbook = BitfinexOrder.GeminiOrderBook()
+
+    async def consumer(self, message):
+        message = json.loads(message)
+        if len(message) == 4:
+            self.orderbook.initvalue(self, message['events'])
+
+        elif len(message) == 6:
+            self.orderbook.update(self, message['events'])
+
+    @staticmethod
+    async def producer():
+        ping = {
+            'event': 'ping',
+        }
+        await asyncio.sleep(1000)
+        return json.dumps(ping)
+
+    async def connect_to_channels(self, websocket):
+        pass
