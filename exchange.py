@@ -42,7 +42,11 @@ class BitfinexExchange(ExchangeBaseClass):
             except ValueError:
                 # Junk data
                 pass
-        print(self.orderbook.top(self))
+        top = self.orderbook.top(self)
+        try:
+            top.orderbook_export()
+        except AttributeError:
+            print(top)
 
     @staticmethod
     async def producer():
@@ -71,12 +75,11 @@ class BitmexExchange(ExchangeBaseClass):
         self.channels = channels
         self.orderbook = BitfinexOrderBook()
 
-    # Some awful parsing Bitmex response stuff, see bitfinex api
     async def consumer(self, message):
         message = json.loads(message)
         if 'data' in message:
-            order = BitmexOrder(message['data'][0], self)
-            print(order)
+            order = BitmexOrder(message['data'][0], self).get_output_data()
+            order.export_order_data()
 
     @staticmethod
     async def producer():
@@ -140,7 +143,7 @@ class KrakenExchange(ExchangeBaseClass):
                         # error handler
                         pass
                     orderbook = KrakenOrderBook(self, data)
-                    orderbook.orderbook_export()
+                    orderbook.export_order_data()
                     print(str(orderbook))
                 await asyncio.sleep(sleep_time)
 
@@ -148,7 +151,7 @@ class KrakenExchange(ExchangeBaseClass):
             for currency in self.currencies:
                 data = self.execute_method(method, currency=currency)
                 orderbook = KrakenOrderBook(self, data)
-                orderbook.orderbook_export()
+                orderbook.export_order_data()
                 print(str(orderbook))
 
             await asyncio.sleep(sleep_time)
@@ -172,6 +175,7 @@ class KrakenExchange(ExchangeBaseClass):
         result_row['ask'] = min([ask[0] for ask in jsn['asks']])
         result_row['ask_volume'] = sum([ask[1] for ask in jsn['asks'] if ask[0] == result_row['ask']])
 
+        return result_row
 
 
 class GdaxExchange(ExchangeBaseClass):
@@ -213,7 +217,7 @@ class GdaxExchange(ExchangeBaseClass):
                 for currency in self.currencies:
                     data = self.execute_method(method, currency=currency)
                     orderbook = GdaxOrderBook(self, data)
-                    orderbook.orderbook_export()
+                    orderbook.export_order_data()
                     print(str(orderbook))
                 await asyncio.sleep(sleep_time)
 
@@ -221,7 +225,7 @@ class GdaxExchange(ExchangeBaseClass):
             for currency in self.currencies:
                 data = self.execute_method(method, currency=currency)
                 orderbook = GdaxOrderBook(self, data)
-                orderbook.orderbook_export()
+                orderbook.export_order_data()
                 print(str(orderbook))
 
             await asyncio.sleep(sleep_time)
@@ -249,10 +253,10 @@ class GdaxExchange(ExchangeBaseClass):
         return result_row
 
 
-class GemeniExchange(ExchangeBaseClass):
+class GeminiExchange(ExchangeBaseClass):
     def __init__(self, name, api_url, currencies):
         api_url += '/' + currencies[0]
-        super(GemeniExchange, self).__init__(name, api_url, currencies)
+        super(GeminiExchange, self).__init__(name, api_url, currencies)
         self.orderbook = BitfinexOrder.GeminiOrderBook()
 
     async def consumer(self, message):

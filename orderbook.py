@@ -1,6 +1,7 @@
 import time
 import settings
 
+
 class Order:
 
     def __init__(self, response):
@@ -32,7 +33,7 @@ class OrderBookOutputData:
                          str(self.ask), str(self.ask_volume),
                          str(self.response_time)])
 
-    def orderbook_export(self):
+    def export_order_data(self):
         with open(self.filename, 'a') as file:
             file.write(str(self)+"\n")
 
@@ -73,7 +74,7 @@ class BitfinexOrderBook(OrderBook):
             return OrderBookOutputData(exchange,
                                        bid, bid_volume,
                                        ask, ask_volume,
-                                       response_time='')
+                                       response_time=-1)
         else:
             return 'Empty orderbook for ' + exchange.name
 
@@ -108,7 +109,6 @@ class GeminiOrderBook:
                     if float(order['price']) > self.bid:
                         print(self.top(exchange))
 
-
             elif order['side'] == 'ask':
                 if order['price'] in self.asks:
                     self.asks[order['price']] += float(order['delta'])
@@ -129,6 +129,7 @@ class GeminiOrderBook:
                                    self.ask, self.ask_volume,
                                    response_time='')
 
+
 class BitmexOrder(Order):
     def __init__(self, response, exchange):
         super(BitmexOrder, self).__init__(response)
@@ -140,18 +141,20 @@ class BitmexOrder(Order):
         self.ask_volume = response['askSize'] / response['askPrice']
         self.timestamp = time.time()
 
-    def __repr__(self):
-        return str(OrderBookOutputData(self.exchange,
-                                       self.bid, self.bid_volume,
-                                       self.ask, self.ask_volume,
-                                       response_time=''))
+    def get_output_data(self):
+        return OrderBookOutputData(self.exchange,
+                                   self.bid, self.bid_volume,
+                                   self.ask, self.ask_volume,
+                                   response_time=-1)
 
       
 class KrakenOrderBook(OrderBookOutputData):
     def __init__(self, exchange, orders):
         data = self.orderbook_processing(orders)
-        super(KrakenOrderBook, self).__init__(exchange, data['bid'], data['bid_volume'], data['ask'],
-                                              data['ask_volume'], data['response_time'])
+        super(KrakenOrderBook, self).__init__(exchange,
+                                              data['bid'], data['bid_volume'],
+                                              data['ask'], data['ask_volume'],
+                                              data['response_time'])
 
     @staticmethod
     def orderbook_processing(orders):
@@ -193,3 +196,49 @@ class GdaxOrderBook(OrderBookOutputData):
         result_row['response_time'] = orders['delay']
 
         return result_row
+
+
+"""
+EXAMPLE CLASS
+"""
+
+
+# Данный класс представляет отдельный order биржи, для более удобного использования внутри программы
+# У данного класса есть те же поля, что у ордера на данной бирже
+class ExchangeOrder(Order):
+
+    def __init__(self, response, exchange):
+        super(ExchangeOrder, self).__init__(response)
+
+        self.name = exchange.name
+
+        # response parsing #
+        # как пример #
+        self.bid = response['bidPrice']
+        self.bid_volume = response['bidSize'] / response['bidPrice']
+        self.ask = response['askPrice']
+        self.ask_volume = response['askSize'] / response['askPrice']
+        self.timestamp = time.time()
+
+    def __repr__(self):
+        pass
+
+
+# Данный класс представляет ордер бук биржи, то есть набор bids и asks
+# bids, asks - списки ExchangeOrder'ов
+# Пока он не обязателен, нужен только для того, чтобы хранить целый orderbook
+class ExchangeOrderBook(OrderBook):
+
+    def update(self, order):
+        # Здесь проходит добавление объекта ExchangeOrder в bids или в asks
+        pass
+
+    def top(self, exchange):
+        # Метод для получение верхушки ордербука
+        # return OutputOrderBookData obj
+        pass
+
+    def __repr__(self):
+        pass
+
+    # В дальнейшем модель можно расширять дополнительными методами
