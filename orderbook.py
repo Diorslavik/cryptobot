@@ -25,18 +25,13 @@ class OrderBookOutputData:
         self.ask = ask
         self.ask_volume = ask_volume
         self.response_time = response_time
-        self.filename = settings.CSV_FILE_NAME
 
     def __str__(self):
         return ';'.join([str(self.timestamp), self.exchange,
                          str(self.bid), str(self.bid_volume),
                          str(self.ask), str(self.ask_volume),
                          str(self.response_time)])
-
-    def export_order_data(self):
-        with open(self.filename, 'a') as file:
-            file.write(str(self)+"\n")
-
+        
 
 class BitfinexOrder(Order):
 

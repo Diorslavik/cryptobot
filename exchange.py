@@ -3,7 +3,9 @@ import asyncio
 from orderbook import BitfinexOrder, BitfinexOrderBook, BitmexOrder, KrakenOrderBook, GdaxOrderBook, GeminiOrderBook
 import json
 import time
+import settings
 import requests
+import utils
 
 
 class ExchangeBaseClass:
@@ -12,6 +14,7 @@ class ExchangeBaseClass:
         self.name = name
         self.api_url = api_url
         self.currencies = currencies
+        self.cache = []
 
     def __str__(self):
         return self.name
@@ -43,8 +46,11 @@ class BitfinexExchange(ExchangeBaseClass):
                 # Junk data
                 pass
         top = self.orderbook.top(self)
+        print(top)
         try:
-            top.orderbook_export()
+            self.cache.append(top)
+            if len(self.cache) > settings.WEBSOCKET_EXCHANGE_CACHE_SIZE:
+                utils.export_cache(self.cache)
         except AttributeError:
             print(top)
 
@@ -79,8 +85,11 @@ class BitmexExchange(ExchangeBaseClass):
         message = json.loads(message)
         if 'data' in message:
             order = BitmexOrder(message['data'][0], self).get_output_data()
-            order.export_order_data()
-
+            print(order)
+            self.cache.append(order)
+            if len(self.cache) > settings.WEBSOCKET_EXCHANGE_CACHE_SIZE:
+                utils.export_cache(self.cache)
+                
     @staticmethod
     async def producer():
         ping = {
@@ -128,13 +137,13 @@ class KrakenExchange(ExchangeBaseClass):
         if r['error']:
             return None
 
-        r["delay"] = delay
+        r['delay'] = delay
         r['timestamp'] = time.time()
         r['exchange'] = currency
 
         return r
 
-    async def exchange_coroutine(self, method='Depth', sleep_time=5, is_infinite=True, count=200):
+    def connect(self, method='Depth', sleep_time=5, is_infinite=True, count=200):
         if is_infinite:
             while True:
                 for currency in self.currencies:
@@ -143,19 +152,22 @@ class KrakenExchange(ExchangeBaseClass):
                         # error handler
                         pass
                     orderbook = KrakenOrderBook(self, data)
-                    orderbook.export_order_data()
+                    self.cache.append(orderbook)
+                    if len(self.cache) > settings.REST_API_EXCHANGE_CACHE_SIZE:
+                        utils.export_cache(self.cache)
                     print(str(orderbook))
-                await asyncio.sleep(sleep_time)
+                time.sleep(sleep_time)
 
         else:
             for currency in self.currencies:
                 data = self.execute_method(method, currency=currency)
                 orderbook = KrakenOrderBook(self, data)
-                orderbook.export_order_data()
+                self.cache.append(orderbook)
+                if len(self.cache) > settings.CACHE_SIZE:
+                    utils.export_cache(self.cache)
                 print(str(orderbook))
 
-            await asyncio.sleep(sleep_time)
-            print(data)
+            time.sleep(sleep_time)
 
     @staticmethod
     def json_processing(jsn):
