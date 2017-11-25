@@ -46,7 +46,7 @@ class BitfinexOrder(Order):
 class BitfinexOrderBook(OrderBook):
 
     def __init__(self, orders=list()):
-        super(BitfinexOrderBook, self).__init__(self, orders=list())
+        super(BitfinexOrderBook, self).__init__(self)
         self.bids = [order for order in orders if order.amount > 0]
         self.asks = [order for order in orders if order.amount < 0]
 
