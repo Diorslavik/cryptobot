@@ -1,6 +1,7 @@
 import asyncio
 import websockets
 
+
 async def connect(exchange):
     async with websockets.connect(exchange.api_url) as websocket:
         print('Handling: ', exchange)

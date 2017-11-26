@@ -9,6 +9,9 @@ GDAX_CURRENCIES = ['BTC-USD']
 KRAKEN_API_URL = 'https://api.kraken.com/0/public'
 KRAKEN_CURRENCIES = ['XXBTZUSD']
 
+LAKEBTC_API_URL = 'https://api.lakebtc.com/api_v2'
+LAKEBTC_CURRENCIES = ['btcusd']
+
 BITFINEX_API_URL = 'wss://api.bitfinex.com/ws/2'
 BITFINEX_CHANNELS = ['book']
 BITFINEX_CURRENCIES = ['btc_usd']
@@ -22,3 +25,7 @@ GEMINI_CHANNELS = ['BTCUSD']
 GEMINI_CURRENCIES = ['BTCUSD']
 
 CSV_FILE_NAME = 'out.csv'
+
+THREAD_COUNT = 4
+WEBSOCKET_EXCHANGE_CACHE_SIZE = 500
+REST_API_EXCHANGE_CACHE_SIZE = 25

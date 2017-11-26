@@ -1,21 +1,18 @@
 import time
 import settings
 
-class Order:
 
+class Order:
     def __init__(self, response):
         pass
 
 
 class OrderBook:
-
     def __init__(self, orders=list()):
-        self.bids = [order for order in orders if order.amount > 0]
-        self.asks = [order for order in orders if order.amount < 0]
+        pass
 
 
 class OrderBookOutputData:
-
     def __init__(self, exchange, bid, bid_volume, ask, ask_volume, response_time):
         self.timestamp = time.time()
         self.exchange = exchange.name
@@ -24,7 +21,6 @@ class OrderBookOutputData:
         self.ask = ask
         self.ask_volume = ask_volume
         self.response_time = response_time
-        self.filename = settings.CSV_FILE_NAME
 
     def __str__(self):
         return ';'.join([str(self.timestamp), self.exchange,
@@ -32,13 +28,8 @@ class OrderBookOutputData:
                          str(self.ask), str(self.ask_volume),
                          str(self.response_time)])
 
-    def orderbook_export(self):
-        with open(self.filename, 'a') as file:
-            file.write(str(self)+"\n")
-
 
 class BitfinexOrder(Order):
-
     def __init__(self, response):
         super(BitfinexOrder, self).__init__(response)
         self.id, self.price, self.amount = response
@@ -49,6 +40,10 @@ class BitfinexOrder(Order):
 
 
 class BitfinexOrderBook(OrderBook):
+    def __init__(self, orders=list()):
+        super(BitfinexOrderBook, self).__init__(self)
+        self.bids = [order for order in orders if order.amount > 0]
+        self.asks = [order for order in orders if order.amount < 0]
 
     def update(self, order):
         if order.price == 0:
@@ -73,7 +68,7 @@ class BitfinexOrderBook(OrderBook):
             return OrderBookOutputData(exchange,
                                        bid, bid_volume,
                                        ask, ask_volume,
-                                       response_time='')
+                                       response_time=-1)
         else:
             return 'Empty orderbook for ' + exchange.name
 
@@ -81,53 +76,70 @@ class BitfinexOrderBook(OrderBook):
         return 'Bids: ' + str(self.bids) + '\n' + 'Asks: ' + str(self.asks)
 
 
-class GeminiOrderBook:
+class GeminiOrder(Order):
+    def __init__(self, response, exchange):
+        super(GeminiOrder, self).__init__(response)
+        self.name = exchange.name
+        self.side = response['side']
+        self.price = float(response['price'])
+        self.remaining = float(response['remaining'])
+        self.timestamp = time.time()
 
-    asks = dict()
-    bids = dict()
-    ask = float()
-    bid = float()
-    ask_volume = float()
-    bid_volume = float()
-    timestamp = int()
-
-    def initvalue(self, exchange, orders=list()):
-        for order in orders:
-            if order['side'] == 'bid':
-                self.bids[float(order['price'])] = float(order['remaining'])
-            elif order['side'] == 'ask':
-                self.asks[float(order['price'])] = float(order['remaining'])
-        print(self.top(exchange))
-
-    def update(self, exchange, order):
-        order = order[0]
-        if 'side' in order:
-            if order['side'] == 'bid':
-                if order['price'] in self.bids:
-                    self.bids[order['price']] += float(order['delta'])
-                    if float(order['price']) > self.bid:
-                        print(self.top(exchange))
+    def __repr__(self):
+        return 'Order: ' + str(self.timestamp) + ', ' + str(self.price) + ', ' + str(self.remaining)
 
 
-            elif order['side'] == 'ask':
-                if order['price'] in self.asks:
-                    self.asks[order['price']] += float(order['delta'])
-                    if float(order['price']) < self.ask:
-                        print(self.top(exchange))
+class GeminiOrderBook(OrderBook):
+    def __init__(self):
+        super().__init__()
+        self.asks = dict()
+        self.bids = dict()
 
-            if self.ask_volume == 0 or self.bid_volume == 0:
-                print(self.top(exchange))
+    def update(self, order):
+        if order.side == 'bid':
+            if order.remaining == 0:
+                self.bids.pop(order.price)
+            else:
+                self.bids[order.price] = order.remaining
+        elif order.side == 'ask':
+            if order.remaining == 0:
+                self.asks.pop(order.price)
+            else:
+                self.asks[order.price] = order.remaining
 
     def top(self, exchange):
-        self.bid = max(self.bids.keys())
-        self.ask = min(self.asks.keys())
-        self.ask_volume = self.asks[self.ask]
-        self.bid_volume = self.bids[self.bid]
+        bid = max(self.bids.keys())
+        bid_volume = self.bids[bid]
+        ask = min(self.asks.keys())
+        ask_volume = self.asks[ask]
 
         return OrderBookOutputData(exchange,
-                                   self.bid, self.bid_volume,
-                                   self.ask, self.ask_volume,
-                                   response_time='')
+                                   bid, bid_volume,
+                                   ask, ask_volume,
+                                   response_time=-1)
+
+
+class LakeBTCOrderBook(OrderBook):
+    def __init__(self):
+        super(LakeBTCOrderBook, self).__init__()
+        self.bids = []
+        self.asks = []
+        self.response_time = -1
+
+    def top(self, exchange):
+        bid = max([bid[0] for bid in self.bids])
+        bid_volume = sum([_bid[1] for _bid in self.bids if _bid[0] == bid])
+
+        ask = min([ask[0] for ask in self.asks])
+        ask_volume = sum([_ask[1] for _ask in self.asks if _ask[0] == ask])
+
+        return OrderBookOutputData(exchange, bid, bid_volume, ask, ask_volume, self.response_time)
+
+    def update(self, orders):
+        self.bids = [[float(bid[0]), float(bid[1])] for bid in orders['bids']]
+        self.asks = [[float(ask[0]), float(ask[1])] for ask in orders['asks']]
+        self.response_time = orders['response_time']
+
 
 class BitmexOrder(Order):
     def __init__(self, response, exchange):
@@ -140,56 +152,94 @@ class BitmexOrder(Order):
         self.ask_volume = response['askSize'] / response['askPrice']
         self.timestamp = time.time()
 
+    def get_output_data(self):
+        return OrderBookOutputData(self.exchange,
+                                   self.bid, self.bid_volume,
+                                   self.ask, self.ask_volume,
+                                   response_time=-1)
+
+
+class KrakenOrderBook(OrderBook):
+    def __init__(self):
+        super(KrakenOrderBook, self).__init__()
+        self.bids = []
+        self.asks = []
+        self.response_time = -1
+
+    def top(self, exchange):
+        bid = max([bid[0] for bid in self.bids])
+        bid_volume = sum([_bid[1] for _bid in self.bids if _bid[0] == bid])
+
+        ask = min([ask[0] for ask in self.asks])
+        ask_volume = sum([_ask[1] for _ask in self.asks if _ask[0] == ask])
+
+        return OrderBookOutputData(exchange, bid, bid_volume, ask, ask_volume, self.response_time)
+
+    def update(self, orders):
+        self.bids = [[float(bid[0]), float(bid[1])] for bid in orders['bids']]
+        self.asks = [[float(ask[0]), float(ask[1])] for ask in orders['asks']]
+        self.response_time = orders['response_time']
+
+
+class GdaxOrderBook(OrderBook):
+    def __init__(self):
+        super(GdaxOrderBook, self).__init__()
+        self.bids = []
+        self.asks = []
+        self.response_time = -1
+
+    def top(self, exchange):
+        bid = max([bid[0] for bid in self.bids])
+        bid_volume = sum([_bid[1] for _bid in self.bids if _bid[0] == bid])
+
+        ask = min([ask[0] for ask in self.asks])
+        ask_volume = sum([_ask[1] for _ask in self.asks if _ask[0] == ask])
+
+        return OrderBookOutputData(exchange, bid, bid_volume, ask, ask_volume, self.response_time)
+
+    def update(self, orders):
+        self.bids = [[float(bid[0]), float(bid[1])] for bid in orders['bids']]
+        self.asks = [[float(ask[0]), float(ask[1])] for ask in orders['asks']]
+        self.response_time = orders['response_time']
+
+
+"""
+EXAMPLE CLASS
+"""
+
+
+# Данный класс представляет отдельный order биржи, для более удобного использования внутри программы
+# У данного класса есть те же поля, что у ордера на данной бирже
+class ExchangeOrder(Order):
+    def __init__(self, response, exchange):
+        super(ExchangeOrder, self).__init__(response)
+
+        self.name = exchange.name
+
+        # response parsing #
+        # как пример #
+        self.bid = response['bidPrice']
+        self.bid_volume = response['bidSize'] / response['bidPrice']
+        self.ask = response['askPrice']
+        self.ask_volume = response['askSize'] / response['askPrice']
+        self.timestamp = time.time()
+
     def __repr__(self):
-        return str(OrderBookOutputData(self.exchange,
-                                       self.bid, self.bid_volume,
-                                       self.ask, self.ask_volume,
-                                       response_time=''))
-
-      
-class KrakenOrderBook(OrderBookOutputData):
-    def __init__(self, exchange, orders):
-        data = self.orderbook_processing(orders)
-        super(KrakenOrderBook, self).__init__(exchange, data['bid'], data['bid_volume'], data['ask'],
-                                              data['ask_volume'], data['response_time'])
-
-    @staticmethod
-    def orderbook_processing(orders):
-        result_row = dict()
-        result_row['response_time'] = orders['delay']
-
-        orders = orders['result'][list(orders['result'].keys())[0]]
-        orders['bids'] = [[float(bid[0]), float(bid[1])] for bid in orders['bids']]
-        orders['asks'] = [[float(ask[0]), float(ask[1])] for ask in orders['asks']]
-
-        result_row['bid'] = max([bid[0] for bid in orders['bids']])
-        result_row['bid_volume'] = sum([bid[1] for bid in orders['bids'] if bid[0] == result_row['bid']])
-
-        result_row['ask'] = min([ask[0] for ask in orders['asks']])
-        result_row['ask_volume'] = sum([ask[1] for ask in orders['asks'] if ask[0] == result_row['ask']])
-
-        return result_row
+        pass
 
 
-class GdaxOrderBook(OrderBookOutputData):
-    def __init__(self, exchange, orders):
-        data = self.orderbook_processing(orders)
-        super(GdaxOrderBook, self).__init__(exchange, data['bid'], data['bid_volume'], data['ask'],
-                                            data['ask_volume'], data['response_time'])
+# Данный класс представляет ордер бук биржи, то есть набор bids и asks
+# bids, asks - списки ExchangeOrder'ов
+# Пока он не обязателен, нужен только для того, чтобы хранить целый orderbook
+class ExchangeOrderBook(OrderBook):
+    def update(self, order):
+        # Здесь проходит добавление объекта ExchangeOrder в bids или в asks
+        pass
 
-    @staticmethod
-    def orderbook_processing(orders):
-        orders['bids'] = [[float(i[0]), float(i[1])] for i in orders['bids']]
-        orders['asks'] = [[float(i[0]), float(i[1])] for i in orders['asks']]
+    def top(self, exchange):
+        # Метод для получение верхушки ордербука
+        # return OutputOrderBookData obj
+        pass
 
-        result_row = dict()
-
-        result_row['bid'] = max([bid[0] for bid in orders['bids']])
-        result_row['bid_volume'] = sum([bid[1] for bid in orders['bids'] if bid[0] == result_row['bid']])
-
-        result_row['ask'] = min([ask[0] for ask in orders['asks']])
-        result_row['ask_volume'] = sum([ask[1] for ask in orders['asks'] if ask[0] == result_row['ask']])
-
-        result_row['response_time'] = orders['delay']
-
-        return result_row
+    def __repr__(self):
+        pass
