@@ -10,7 +10,6 @@ import time
 
 p = ThreadPoolExecutor(settings.THREAD_COUNT)
 
-
 def main(argv):
     loop = asyncio.get_event_loop()
 
@@ -28,6 +27,10 @@ def main(argv):
                             settings.GEMINI_API_URL,
                             settings.GEMINI_CURRENCIES,
                             settings.GEMINI_CHANNELS)
+
+    kraken = KrakenExchange('Kraken',
+                            settings.KRAKEN_API_URL,
+                            settings.KRAKEN_CURRENCIES)
 
     lakebtc = LakeBTCExchange('LakeBTC',
                               settings.LAKEBTC_API_URL,
@@ -69,15 +72,6 @@ def main(argv):
         loop.run_forever()
     except KeyboardInterrupt:
         loop.close()
-
-        # REST API exchanges
-        # gdax = GdaxExchange("GDAX",
-        #                     settings.GDAX_API_URL,
-        #                     settings.GDAX_CURRENCIES)
-
-        # print('Adding gdax')
-        # asyncio.ensure_future(gdax.exchange_coroutine())
-
 
 if __name__ == "__main__":
     main(sys.argv[1:])

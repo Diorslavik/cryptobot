@@ -90,6 +90,7 @@ class BitmexExchange(ExchangeBaseClass):
                 utils.export_cache(self.cache)
                 self.cache = []
 
+                
     @staticmethod
     async def producer():
         ping = {
@@ -138,9 +139,6 @@ class KrakenExchange(ExchangeBaseClass):
 
         r = r['result'][currency]
         r['response_time'] = delay
-        r['delay'] = delay
-        r['timestamp'] = time.time()
-        r['exchange'] = currency
 
         return r
 
@@ -283,48 +281,3 @@ class LakeBTCExchange(ExchangeBaseClass):
         kws = ['{}={}'.format(name, value) for name, value in kwargs.items()]
 
         return url + '&'.join(kws)
-
-    def execute_method(self, method='bcorderbook', currency=None):
-        request_url = self.make_api_url(self.api_url,
-                                        method=method,
-                                        symbol=currency)
-        delay = time.time()
-        r = requests.get(request_url)
-        delay = time.time() - delay
-        r = r.json()
-
-        r['response_time'] = delay
-        r['delay'] = delay
-        r['timestamp'] = time.time()
-        r['exchange'] = currency
-
-        return r
-
-    def connect(self, method='bcorderbook', sleep_time=5, is_infinite=True):
-        if is_infinite:
-            while True:
-                for currency in self.currencies:
-                    data = self.execute_method(method, currency=currency)
-                    if not data:
-                        # error handler
-                        pass
-                    self.orderbook.update(data)
-                    top = self.orderbook.top(self)
-                    print(str(top))
-                    self.cache.append(top)
-                    if len(self.cache) > settings.REST_API_EXCHANGE_CACHE_SIZE:
-                        utils.export_cache(self.cache)
-                        self.cache = []
-                time.sleep(sleep_time)
-        else:
-            for currency in self.currencies:
-                data = self.execute_method(method, currency=currency)
-                self.orderbook.update(data)
-                top = self.orderbook.top(self)
-                print(str(top))
-                self.cache.append(top)
-                if len(self.cache) > settings.REST_API_EXCHANGE_CACHE_SIZE:
-                    utils.export_cache(self.cache)
-                    self.cache = []
-            time.sleep(sleep_time)
-

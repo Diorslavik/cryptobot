@@ -28,7 +28,7 @@ class OrderBookOutputData:
                          str(self.ask), str(self.ask_volume),
                          str(self.response_time)])
 
-
+      
 class BitfinexOrder(Order):
     def __init__(self, response):
         super(BitfinexOrder, self).__init__(response)
@@ -141,6 +141,7 @@ class LakeBTCOrderBook(OrderBook):
         self.response_time = orders['response_time']
 
 
+
 class BitmexOrder(Order):
     def __init__(self, response, exchange):
         super(BitmexOrder, self).__init__(response)
@@ -201,45 +202,3 @@ class GdaxOrderBook(OrderBook):
         self.bids = [[float(bid[0]), float(bid[1])] for bid in orders['bids']]
         self.asks = [[float(ask[0]), float(ask[1])] for ask in orders['asks']]
         self.response_time = orders['response_time']
-
-
-"""
-EXAMPLE CLASS
-"""
-
-
-# Данный класс представляет отдельный order биржи, для более удобного использования внутри программы
-# У данного класса есть те же поля, что у ордера на данной бирже
-class ExchangeOrder(Order):
-    def __init__(self, response, exchange):
-        super(ExchangeOrder, self).__init__(response)
-
-        self.name = exchange.name
-
-        # response parsing #
-        # как пример #
-        self.bid = response['bidPrice']
-        self.bid_volume = response['bidSize'] / response['bidPrice']
-        self.ask = response['askPrice']
-        self.ask_volume = response['askSize'] / response['askPrice']
-        self.timestamp = time.time()
-
-    def __repr__(self):
-        pass
-
-
-# Данный класс представляет ордер бук биржи, то есть набор bids и asks
-# bids, asks - списки ExchangeOrder'ов
-# Пока он не обязателен, нужен только для того, чтобы хранить целый orderbook
-class ExchangeOrderBook(OrderBook):
-    def update(self, order):
-        # Здесь проходит добавление объекта ExchangeOrder в bids или в asks
-        pass
-
-    def top(self, exchange):
-        # Метод для получение верхушки ордербука
-        # return OutputOrderBookData obj
-        pass
-
-    def __repr__(self):
-        pass

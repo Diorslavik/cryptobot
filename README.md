@@ -32,7 +32,7 @@ exchange_coroutine(self, method, sleep_time, if_infinite)
 5. Add 2 lines of code to bot.py:
 ```
 print('Adding X')
-asyncio.ensure_future(ws.connect(X_obj))
+asyncio.ensure_future(X_obj.exchange_coroutine())
 ```
 6. Run it!
 ```
